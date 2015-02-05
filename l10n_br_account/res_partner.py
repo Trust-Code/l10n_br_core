@@ -17,6 +17,7 @@
 #along with this program.  If not, see <http://www.gnu.org/licenses/>.        #
 ###############################################################################
 
+from openerp import api
 from openerp.osv import orm, fields
 
 FISCAL_POSITION_COLUMNS = {
@@ -36,6 +37,11 @@ FISCAL_POSITION_COLUMNS = {
     'asset_operation': fields.boolean(u'Operação de Aquisição de Ativo',
         help=u"""Caso seja marcada essa opção, será incluido o IPI na base de
             calculo do ICMS."""),
+    'id_dest': fields.selection([('1', u'Operação interna'),
+                                ('2', u'Operação interestadual'),
+                                ('3', u'Operação com exterior')],
+                                u'Local de destino da operação',
+                                help=u'Identificador de local de destino da operação.'),
     'state': fields.selection([('draft', u'Rascunho'),
             ('review', u'Revisão'), ('approved', u'Aprovada'),
             ('unapproved', u'Não Aprovada')], 'Status', readonly=True,
@@ -53,7 +59,7 @@ class AccountFiscalPositionTemplate(orm.Model):
     _defaults = FISCAL_POSITION_DEFAULTS
 
     def onchange_type(self, cr, uid, ids, type=False, context=None):
-        type_tax = {'input': 'purhcase', 'output': 'sale'}
+        type_tax = {'input': 'purchase', 'output': 'sale'}
         return {'value': {'type_tax_use': type_tax.get(type, 'all'),
                           'tax_ids': False}}
 
@@ -63,8 +69,7 @@ class AccountFiscalPositionTemplate(orm.Model):
             fc_fields = self.pool.get('l10n_br_account.fiscal.category').read(
                     cr, uid, fiscal_category_id,
                     ['fiscal_type', 'journal_type'], context=context)
-        return {'value':
-            {'fiscal_category_fiscal_type': fc_fields['fiscal_type']}}
+            return {'value': {'fiscal_category_fiscal_type': fc_fields['fiscal_type']}}
 
     def generate_fiscal_position(self, cr, uid, chart_temp_id,
                                  tax_template_ref, acc_template_ref,
@@ -112,6 +117,7 @@ class AccountFiscalPositionTemplate(orm.Model):
                     'cfop_id': position.cfop_id and position.cfop_id.id or False,
                     'inv_copy_note': position.inv_copy_note,
                     'asset_operation': position.asset_operation,
+                    'id_dest': position.id_dest,
                     'fiscal_category_id': position.fiscal_category_id and position.fiscal_category_id.id or False})
             for tax in position.tax_ids:
                 obj_tax_fp.create(cr, uid, {
@@ -187,8 +193,7 @@ class AccountFiscalPosition(orm.Model):
             fc_fields = self.pool.get('l10n_br_account.fiscal.category').read(
                 cr, uid, fiscal_category_id, ['fiscal_type', 'journal_type'],
                 context=context)
-        return {'value':
-            {'fiscal_category_fiscal_type': fc_fields['fiscal_type']}}
+            return {'value': {'fiscal_category_fiscal_type': fc_fields['fiscal_type']}}
 
     #TODO - Refatorar para trocar os impostos
     def map_tax_code(self, cr, uid, product_id, fiscal_position,
@@ -250,12 +255,14 @@ class AccountFiscalPosition(orm.Model):
 
         return result
 
+    @api.v7
     def map_tax(self, cr, uid, fposition_id, taxes, context=None):
         result = []
         if not context:
             context = {}
         if fposition_id and fposition_id.company_id and \
-        context.get('type_tax_use') in ('sale', 'all'):
+                fposition_id.type_tax_use in ('sale', 'all'):
+            
             if context.get('fiscal_type', 'product') == 'product':
                 company_tax_ids = self.pool.get('res.company').read(
                     cr, uid, fposition_id.company_id.id, ['product_tax_ids'],
@@ -294,6 +301,11 @@ class AccountFiscalPosition(orm.Model):
 
         return list(set(result))
 
+    @api.v8 
+    def map_tax(self, taxes):
+        result = self._model.map_tax(self._cr, self._uid, self, taxes, self._context)
+        result = self.env['account.tax'].browse(result)
+        return result
 
 class AccountFiscalPositionTax(orm.Model):
     _inherit = 'account.fiscal.position.tax'

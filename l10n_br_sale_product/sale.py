@@ -24,7 +24,6 @@ from openerp.addons import decimal_precision as dp
 def  calc_price_ratio(price_gross, amount_calc, amount_total):
     return price_gross * amount_calc / amount_total
 
-
 class SaleOrder(orm.Model):
     _inherit = 'sale.order'
 
@@ -48,6 +47,7 @@ class SaleOrder(orm.Model):
                 val2 += (line.insurance_value + line.freight_value + line.other_costs_value)
                 val3 += line.discount_value
                 val4 += line.price_gross
+                val -= (line.insurance_value + line.freight_value + line.other_costs_value)
             result[order.id]['amount_tax'] = cur_obj.round(cr, uid, cur, val)
             result[order.id]['amount_untaxed'] = cur_obj.round(cr, uid, cur, val1)
             result[order.id]['amount_extra'] = cur_obj.round(cr, uid, cur, val2)
@@ -68,7 +68,7 @@ class SaleOrder(orm.Model):
             freight_value=line.freight_value,
             other_costs_value=line.other_costs_value)['taxes']:
             tax = self.pool.get('account.tax').browse(cr, uid, c['id'])
-            if not tax.tax_code_id.tax_discount:
+            if not tax.tax_discount:
                 val += c.get('amount', 0.0)
         return val
 
@@ -151,12 +151,56 @@ class SaleOrder(orm.Model):
                                states={'draft': [('readonly', False)]}),
         'discount_rate': fields.float('Desconto', readonly=True,
                                states={'draft': [('readonly', False)]}),
+        'ind_pres': fields.selection([
+            ('0', u'Não se aplica'),
+            ('1', u'Operação presencial'),
+            ('2', u'Operação não presencial, pela Internet'),
+            ('3', u'Operação não presencial, Teleatendimento'),
+            ('4', u'NFC-e em operação com entrega em domicílio'),
+            ('9', u'Operação não presencial, outros'),
+        ], u'Tipo de operação', readonly=True,
+            states={'draft': [('readonly', False)]}, required=False,
+            help=u'Indicador de presença do comprador no \
+                \nestabelecimento comercial no momento \
+                \nda operação.'),
     }
+
+    def _default_ind_pres(self, cr, uid, context=None):
+        result = False
+        #shop_id = context.get("shop_id", self.default_get(
+        #    cr, uid, ["shop_id"], context)["shop_id"])
+        #if shop_id:
+        #    shop = self.pool.get("sale.shop").read(
+        #        cr, uid, [shop_id], ["default_ind_pres"])
+        #    if shop[0]["default_ind_pres"]:
+        #        result = shop[0]["default_ind_pres"][0]
+        return result
+
     _defaults = {
         'amount_freight': 0.00,
         'amount_costs': 0.00,
         'amount_insurance': 0.00,
+        'ind_pres': _default_ind_pres,
     }
+
+    def _prepare_invoice(self, cr, uid, order, lines, context=None):
+        """Prepare the dict of values to create the new invoice for a
+           sale order. This method may be overridden to implement custom
+           invoice generation (making sure to call super() to establish
+           a clean extension chain).
+
+           :param browse_record order: sale.order record to invoice
+           :param list(int) line: list of invoice line IDs that must be
+                                  attached to the invoice
+           :return: dict of value to create() the invoice
+        """
+        result = super(SaleOrder, self)._prepare_invoice(
+            cr, uid, order, lines, context)
+
+        if order.ind_pres:
+            result['ind_pres'] = order.ind_pres
+
+        return result
 
     def _fiscal_comment(self, cr, uid, order, context=None):
         fp_comment = []
@@ -175,38 +219,6 @@ class SaleOrder(orm.Model):
                         fc_ids.append(fc.id)
 
         return fp_comment + fc_comment
-
-    def action_invoice_create(self, cr, uid, ids, grouped=False, states=None,
-                            date_invoice=False, context=None):
-        invoice_id = super(SaleOrder, self).action_invoice_create(
-            cr, uid, ids, grouped, states, date_invoice, context)
-
-        user = self.pool.get('res.users').browse(cr, uid, uid, context=context)
-        company = self.pool.get('res.company').browse(
-            cr, uid, user.company_id.id, context=context)
-
-        inv = self.pool.get("account.invoice").browse(
-            cr, uid, invoice_id, context=context)
-        vals = [
-            ('Frete', company.account_freight_id, inv.amount_freight),
-            ('Seguro', company.account_insurance_id, inv.amount_insurance),
-            ('Outros Custos', company.account_other_costs, inv.amount_costs)
-        ]
-
-        ait_obj = self.pool.get('account.invoice.tax')
-        for tax in vals:
-            if tax[2] > 0:
-                ait_obj.create(cr, uid,
-                {
-                 'invoice_id': invoice_id,
-                 'name': tax[0],
-                 'account_id': tax[1].id,
-                 'amount': tax[2],
-                 'base': tax[2],
-                 'manual': 1,
-                 'company_id': company.id,
-                }, context=context)
-        return invoice_id
 
     def onchange_amount_freight(self, cr, uid, ids, amount_freight=False):
         result = {}
@@ -303,6 +315,7 @@ class SaleOrderLine(orm.Model):
 
     def _prepare_order_line_invoice_line(self, cr, uid, line,
                                          account_id=False, context=None):
+
         result = super(SaleOrderLine, self)._prepare_order_line_invoice_line(
             cr, uid, line, account_id, context)
 
@@ -317,6 +330,14 @@ class SaleOrderLine(orm.Model):
         result['company_id'] = line.order_id.company_id.id
         result['partner_id'] = line.order_id.partner_id.id
 
+        result = self.l10n_br_sale_product_prepare_order_line_invoice_line(
+            cr, uid, line, result, account_id, context)
+
+        return result
+
+    def l10n_br_sale_product_prepare_order_line_invoice_line(self, cr, uid, line,
+                                                              result, account_id=False, context=None):
+
         if line.product_id.fiscal_type == 'product':
             if line.fiscal_position:
                 cfop = self.pool.get("account.fiscal.position").read(
@@ -324,4 +345,5 @@ class SaleOrderLine(orm.Model):
                     context=context)
                 if cfop[0]['cfop_id']:
                     result['cfop_id'] = cfop[0]['cfop_id'][0]
+
         return result

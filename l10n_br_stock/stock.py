@@ -33,7 +33,7 @@ class StockIncoterms(orm.Model):
             'Frete por Conta', required=True)
     }
     _defaults = {
-        'freight_responsibility': 0
+        'freight_responsibility': '0'
     }
 
 
@@ -54,9 +54,21 @@ class StockPicking(orm.Model):
         'fiscal_position': fields.many2one(
             'account.fiscal.position', u'Posição Fiscal',
             domain="[('fiscal_category_id','=',fiscal_category_id)]",
-            readonly=True, states={'draft': [('readonly', False)]})
+            readonly=True, states={'draft': [('readonly', False)]}),
+        'ind_pres': fields.selection([
+                ('0', u'Não se aplica'),
+                ('1', u'Operação presencial'),
+                ('2', u'Operação não presencial, pela Internet'),
+                ('3', u'Operação não presencial, Teleatendimento'),
+                ('4', u'NFC-e em operação com entrega em domicílio'),
+                ('9', u'Operação não presencial, outros'),
+            ],u'Tipo de operação',
+            help=u'Indicador de presença do comprador no \
+                \nestabelecimento comercial no momento \
+                \nda operação.'),
     }
     _defaults = {
+        'ind_pres': '0',
         'fiscal_category_id': _default_fiscal_category
     }
 
@@ -162,8 +174,8 @@ class StockPicking(orm.Model):
         picking.fiscal_category_id.id
         result['fiscal_position'] = picking.fiscal_position and \
         picking.fiscal_position.id
+        result['ind_pres'] = picking.ind_pres
         return result
-
     
 class StockMove(orm.Model):
 

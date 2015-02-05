@@ -19,6 +19,7 @@
 
 from lxml import etree
 
+from openerp import models, api
 from openerp import netsvc
 from openerp.osv import orm, fields
 from openerp.addons import decimal_precision as dp
@@ -41,7 +42,7 @@ JOURNAL_TYPE = {
 }
 
 
-class AccountInvoice(orm.Model):
+class AccountInvoice(models.Model):
     _inherit = 'account.invoice'
 
     def _get_receivable_lines(self, cr, uid, ids, name, arg, context=None):
@@ -290,7 +291,7 @@ class AccountInvoice(orm.Model):
                             inv.document_serie_id.name))
 
                 seq_no = sequence.get_id(cr, uid, inv.document_serie_id.internal_sequence_id.id, context=context)
-                self.write(cr, uid, inv.id, {'internal_number': seq_no})
+                self.write(cr, uid, inv.id, {'ref': seq_no, 'internal_number': seq_no})
         return True
 
     def action_number(self, cr, uid, ids, context=None):
@@ -315,32 +316,34 @@ class AccountInvoice(orm.Model):
                 'WHERE account_move_line.move_id = %s '
                 'AND account_analytic_line.move_id = account_move_line.id',
                 (ref, move_id))
-
-            for inv_id, name in self.name_get(cr, uid, [inv_id]):
-                ctx = context.copy()
-                if obj_inv.type in ('out_invoice', 'out_refund'):
-                    ctx = self.get_log_context(cr, uid, context=ctx)
-                message = _('Invoice ') + " '" + name + "' " + _("is validated.")
-                self.log(cr, uid, inv_id, message, context=ctx)
+            
+            #TODO Usar OpenChatter para gerar um registro que a fatura foi validada.
+            #for inv_id, name in self.name_get(cr, uid, [inv_id]):
+            #    ctx = context.copy()
+            #    if obj_inv.type in ('out_invoice', 'out_refund'):
+            #        ctx = self.get_log_context(cr, uid, context=ctx)
+            #    message = _('Invoice ') + " '" + name + "' " + _("is validated.")
+            #    self.log(cr, uid, inv_id, message, context=ctx)
         return True
 
-    def action_move_create(self, cr, uid, ids, *args):
-        result = super(AccountInvoice, self).action_move_create(
-            cr, uid, ids, *args)
-        for inv in self.browse(cr, uid, ids):
-            if inv.move_id:
-                self.pool.get('account.move').write(
-                    cr, uid, [inv.move_id.id], {'ref': inv.internal_number})
-                for move_line in inv.move_id.line_id:
-                    self.pool.get('account.move.line').write(
-                        cr, uid, [move_line.id], {'ref': inv.internal_number})
-                move_lines = [x for x in inv.move_id.line_id if x.account_id.id == inv.account_id.id and x.account_id.type in ('receivable', 'payable')]
-                i = len(move_lines)
-                for move_line in move_lines:
-                    move_line_name = '%s/%s' % (inv.internal_number, i)
-                    self.pool.get('account.move.line').write(
-                        cr, uid, [move_line.id], {'name': move_line_name})
-                    i -= 1
+    @api.multi
+    def finalize_invoice_move_lines(self, move_lines):
+        """finalize_invoice_move_lines(cr, uid, invoice, move_lines) -> move_lines
+        Hook method to be overridden in additional modules to verify and possibly alter the
+        move lines to be created by an invoice, for special cases.
+        :param invoice_browse: browsable record of the invoice that is generating the move lines
+        :param move_lines: list of dictionaries with the account.move.lines (as for create())
+        :return: the (possibly updated) final move_lines to create for this invoice
+        """        
+        move_lines = super(AccountInvoice, self).finalize_invoice_move_lines(move_lines)
+        cont=1
+        result = []
+        for move_line in move_lines:
+            if (move_line[2]['debit'] or move_line[2]['credit']):
+                if (move_line[2]['account_id'] == self.account_id.id):
+                    move_line[2]['name'] = '%s/%s' % ( self.internal_number, cont)
+                    cont +=1
+                result.append(move_line)
         return result
 
     def _fiscal_position_map(self, cr, uid, result, context=None, **kwargs):
@@ -501,8 +504,7 @@ class AccountInvoiceLine(orm.Model):
 
     def _fiscal_position_map(self, cr, uid, result, context=None, **kwargs):
 
-        if not context:
-            context = {}
+        context = dict(context or {})         
         context.update({'use_domain': ('use_invoice', '=', True)})
         kwargs.update({'context': context})
         result['value']['cfop_id'] = False
@@ -543,8 +545,9 @@ class AccountInvoiceLine(orm.Model):
                           parent_fposition_id=False):
 
         result = super(AccountInvoiceLine, self).product_id_change(
-            cr, uid, ids, product, uom, qty, name, type, partner_id,
-            fposition_id, price_unit, currency_id, context, company_id)
+            cr, uid, ids, product, uom, qty=qty, name=name, type=type, partner_id=partner_id,
+            fposition_id=fposition_id, price_unit=price_unit, currency_id=currency_id,
+            company_id=company_id, context=context)
 
         fiscal_position = fposition_id or parent_fposition_id or False
 
@@ -617,8 +620,9 @@ class AccountInvoiceLine(orm.Model):
                     company_id=None, fiscal_category_id=False):
 
         result = super(AccountInvoiceLine, self).uos_id_change(
-            cr, uid, ids, product, uom, qty, name, type, partner_id,
-            fposition_id, price_unit, currency_id, context, company_id)
+            cr, uid, ids, product, uom, qty=qty, name=name, type=type, partner_id=partner_id,
+            fposition_id=fposition_id, price_unit=price_unit, currency_id=currency_id, 
+            context=context, company_id=company_id)
         return self._fiscal_position_map(
             cr, uid, result, context, partner_id=partner_id,
             partner_invoice_id=partner_id, company_id=company_id,

@@ -61,7 +61,7 @@ class SaleOrder(orm.Model):
             line.product_id, line.order_id.partner_id,
             fiscal_position=line.fiscal_position)['taxes']:
             tax = self.pool.get('account.tax').browse(cr, uid, c['id'])
-            if not tax.tax_code_id.tax_discount:
+            if not tax.tax_discount:
                 value += c.get('amount', 0.0)
         return value
 
@@ -282,6 +282,7 @@ class SaleOrder(orm.Model):
         result['comment'] = " - ".join(comment)
         result['fiscal_comment'] = " - ".join(fiscal_comment)
         result['fiscal_category_id'] = fiscal_category_id
+
         return result
 
 
@@ -443,15 +444,27 @@ class SaleOrderLine(orm.Model):
 
     def _prepare_order_line_invoice_line(self, cr, uid, line,
                                          account_id=False, context=None):
+
         result = super(SaleOrderLine, self)._prepare_order_line_invoice_line(
             cr, uid, line, account_id, context)
 
+        result = self.l10n_br_sale_prepare_order_line_invoice_line(
+            cr, uid, line, result, account_id, context)
+
+        return result
+
+    def l10n_br_sale_prepare_order_line_invoice_line(self, cr, uid, line, result,
+                                         account_id=False, context=None):
+
         fc_id = line.fiscal_category_id or \
-        line.order_id.fiscal_category_id or False
+                line.order_id.fiscal_category_id or False
+
         if fc_id:
             result['fiscal_category_id'] = fc_id.id
 
         fp_id = line.fiscal_position or line.order_id.fiscal_position or False
+
         if fp_id:
             result['fiscal_position'] = fp_id.id
+
         return result

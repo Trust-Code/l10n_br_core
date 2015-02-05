@@ -18,6 +18,8 @@
 ###############################################################################
 
 import time
+import datetime
+from openerp import SUPERUSER_ID
 
 from openerp.osv import orm, fields
 from openerp.addons import decimal_precision as dp
@@ -41,10 +43,12 @@ class AccountInvoice(orm.Model):
                 'amount_tax_discount': 0.0,
                 'amount_total': 0.0,
                 'icms_base': 0.0,
+                'icms_base_other': 0.0,
                 'icms_value': 0.0,
                 'icms_st_base': 0.0,
                 'icms_st_value': 0.0,
                 'ipi_base': 0.0,
+                'ipi_base_other': 0.0,
                 'ipi_value': 0.0,
                 'pis_base': 0.0,
                 'pis_value': 0.0,
@@ -61,10 +65,12 @@ class AccountInvoice(orm.Model):
                 result[invoice.id]['amount_untaxed'] += line.price_total
                 if line.icms_cst_id.code not in ('101','102','201','202','300','500'):
                     result[invoice.id]['icms_base'] += line.icms_base
+                    result[invoice.id]['icms_base_other'] += line.icms_base_other
                     result[invoice.id]['icms_value'] += line.icms_value
                 result[invoice.id]['icms_st_base'] += line.icms_st_base
                 result[invoice.id]['icms_st_value'] += line.icms_st_value
                 result[invoice.id]['ipi_base'] += line.ipi_base
+                result[invoice.id]['ipi_base_other'] += line.ipi_base_other
                 result[invoice.id]['ipi_value'] += line.ipi_value
                 result[invoice.id]['pis_base'] += line.pis_base
                 result[invoice.id]['pis_value'] += line.pis_value
@@ -111,6 +117,36 @@ class AccountInvoice(orm.Model):
         return list(result.keys())
 
     _columns = {
+        'nfe_version': fields.selection(
+            [('1.10', '1.10'), ('2.00', '2.00'), ('3.10', '3.10')],
+            u'Versão NFe', readonly=True,
+            states={'draft': [('readonly', False)]}, required=True),
+        'date_hour_invoice': fields.datetime(
+            u'Data e hora de emissão', readonly=True,
+            states={'draft': [('readonly', False)]},
+            select=True, help="Deixe em branco para usar a data atual"),
+        'ind_final': fields.selection([
+            ('0', u'Não'),
+            ('1', u'Consumidor final')
+        ], u'Operação com Consumidor final', readonly=True,
+            states={'draft': [('readonly', False)]}, required=False,
+            help=u'Indica operação com Consumidor final.'),
+        'ind_pres': fields.selection([
+            ('0', u'Não se aplica'),
+            ('1', u'Operação presencial'),
+            ('2', u'Operação não presencial, pela Internet'),
+            ('3', u'Operação não presencial, Teleatendimento'),
+            ('4', u'NFC-e em operação com entrega em domicílio'),
+            ('9', u'Operação não presencial, outros'),
+        ], u'Tipo de operação', readonly=True,
+            states={'draft': [('readonly', False)]}, required=False,
+            help=u'Indicador de presença do comprador no \
+                \nestabelecimento comercial no momento \
+                \nda operação.'),
+        'date_in_out': fields.datetime(
+            u'Data de Entrada/Saida', readonly=True,
+            states={'draft': [('readonly', False)]},
+            select=True, help="Deixe em branco para usar a data atual"),
         'partner_shipping_id': fields.many2one(
             'res.partner', 'Delivery Address',
             readonly=True, required=True,
@@ -238,6 +274,19 @@ class AccountInvoice(orm.Model):
                                           'invoice_line_tax_id',
                                           'quantity', 'discount'], 20),
             }, multi='all'),
+        'icms_base_other': fields.function(
+            _amount_all, method=True,
+            digits_compute=dp.get_precision('Account'),
+            string='Base ICMS Outras',
+            store={
+                'account.invoice': (lambda self, cr, uid, ids, c={}: ids,
+                                    ['invoice_line'], 20),
+                'account.invoice.tax': (_get_invoice_tax, None, 20),
+                'account.invoice.line': (_get_invoice_line,
+                                         ['price_unit',
+                                          'invoice_line_tax_id',
+                                          'quantity', 'discount'], 20),
+            }, multi='all'),
         'icms_value': fields.function(
             _amount_all, method=True,
             digits_compute=dp.get_precision('Account'), string='Valor ICMS',
@@ -278,6 +327,19 @@ class AccountInvoice(orm.Model):
         'ipi_base': fields.function(
             _amount_all, method=True,
             digits_compute=dp.get_precision('Account'), string='Base IPI',
+            store={
+                'account.invoice': (lambda self, cr, uid, ids, c={}: ids,
+                                    ['invoice_line'], 20),
+                'account.invoice.tax': (_get_invoice_tax, None, 20),
+                'account.invoice.line': (_get_invoice_line,
+                                         ['price_unit',
+                                          'invoice_line_tax_id',
+                                          'quantity', 'discount'], 20),
+            }, multi='all'),
+        'ipi_base_other': fields.function(
+            _amount_all, method=True,
+            digits_compute=dp.get_precision('Account'),
+            string='Base IPI Outras',
             store={
                 'account.invoice': (lambda self, cr, uid, ids, c={}: ids,
                                     ['invoice_line'], 20),
@@ -366,7 +428,13 @@ class AccountInvoice(orm.Model):
                                     readonly=True,
                                     states={'draft': [('readonly', False)]}),
         'number_of_packages': fields.integer(
-            'Volume', readonly=True, states={'draft': [('readonly', False)]}),
+            'Quantidade de Volumes',  readonly=True, states={'draft': [('readonly', False)]}),
+        'kind_of_packages': fields.char(
+            'Espécie', size=60, readonly=True, states={'draft': [('readonly', False)]}),
+        'brand_of_packages': fields.char(
+            'Brand',  size=60, readonly=True, states={'draft': [('readonly', False)]}),
+        'notation_of_packages': fields.char(
+            'Numeração', size=60, readonly=True, states={'draft': [('readonly', False)]}),
         'amount_insurance': fields.function(
             _amount_all, method=True,
             digits_compute=dp.get_precision('Account'),
@@ -445,7 +513,17 @@ class AccountInvoice(orm.Model):
 
         return fiscal_document_serie
 
+    def _default_nfe_version(self, cr, uid, context=None):
+        user = self.pool.get('res.users').browse(cr, uid, uid, context=context)
+        nfe_version = self.pool.get('res.company').read(
+            cr, uid, user.company_id.id, ['nfe_version'],
+            context=context)['nfe_version']
+        return nfe_version or False
+
     _defaults = {
+        'nfe_version': _default_nfe_version,
+        'ind_final': '0',
+        'ind_pres': '0',
         'fiscal_category_id': _default_fiscal_category,
         'fiscal_document_id': _default_fiscal_document,
         'document_serie_id': _default_fiscal_document_serie,
@@ -458,6 +536,38 @@ class AccountInvoice(orm.Model):
 
         result = txt.validate(cr, uid, ids, context)
         return result
+
+    def action_move_create(self, cr, uid, ids, *args):
+        result = super(AccountInvoice, self).action_move_create(
+            cr, uid, ids, *args)
+
+        user = self.pool.get('res.users').browse(cr, uid, uid)
+        obj_company = self.pool.get('res.company')
+        company_id = obj_company.browse(cr, uid, user.company_id.id).id
+
+        for invoice in self.browse(cr, uid, ids):
+            date_time_now = fields.datetime.now()
+
+            if not invoice.date_hour_invoice:
+                self.write(cr, uid, [invoice.id], {'date_hour_invoice': date_time_now})
+
+            if not invoice.date_in_out:
+                self.write(cr, uid, [invoice.id], {'date_in_out': date_time_now})
+
+        return result
+
+    def action_date_assign(self, cr, uid, ids, *args):
+
+        for inv in self.browse(cr, uid, ids):
+            if inv.date_hour_invoice:
+                aux = datetime.datetime.strptime(inv.date_hour_invoice, '%Y-%m-%d %H:%M:%S').date()
+                inv.date_invoice = str(aux)
+
+            res = self.onchange_payment_term_date_invoice(cr, uid, inv.id, inv.payment_term.id, inv.date_invoice)
+
+            if res and res['value']:
+                self.write(cr, uid, [inv.id], res['value'])
+        return True
 
 
 class AccountInvoiceLine(orm.Model):
@@ -501,14 +611,18 @@ class AccountInvoiceLine(orm.Model):
         return res
 
     _columns = {
+        'date_invoice': fields.date('Invoice Date', readonly=True, states={'draft':[('readonly',False)]}, select=True, help="Keep empty to use the current date"),
         'fiscal_category_id': fields.many2one(
             'l10n_br_account.fiscal.category', 'Categoria'),
         'fiscal_position': fields.many2one(
             'account.fiscal.position', u'Posição Fiscal',
             domain="[('fiscal_category_id','=',fiscal_category_id)]"),
+        'import_declaration_ids': fields.one2many(
+            'l10n_br_account_product.import.declaration',
+            'invoice_line_id', u'Declaração de Importação'),
         'cfop_id': fields.many2one('l10n_br_account_product.cfop', 'CFOP'),
         'fiscal_classification_id': fields.many2one(
-            'account.product.fiscal.classification', u'Classficação Fiscal'),
+            'account.product.fiscal.classification', u'Classificação Fiscal'),
         'product_type': fields.selection(
             [('product', 'Produto'), ('service', u'Serviço')],
             'Tipo do Produto', required=True),
@@ -809,9 +923,7 @@ class AccountInvoiceLine(orm.Model):
     def _get_tax_codes(self, cr, uid, product_id, fiscal_position,
                         taxes, company_id, context=None):
 
-        if not context:
-            context = {}
-
+        context = dict(context or {})
         result = {}
 
         if fiscal_position.fiscal_category_id.journal_type in ('sale', 'sale_refund'):
@@ -839,9 +951,26 @@ class AccountInvoiceLine(orm.Model):
 
         tax_obj = self.pool.get('account.tax')
 
-        if not values.get('product_id') or not values.get('quantity') \
-        or not values.get('fiscal_position'):
-            return {}
+        if (not values.get('product_id')
+                or not values.get('quantity')
+                or not values.get('fiscal_position')):
+            invoice_line_id = context.get('invoice_line_id', False)
+            if not invoice_line_id:
+                return {}
+            elif isinstance(invoice_line_id, (list)) and not len(invoice_line_id) == 1:
+                return {}
+            else:
+                if isinstance(invoice_line_id, (int)):
+                    invoice_line_id = [invoice_line_id]
+                old = self.read(cr, uid, invoice_line_id,[
+                    'fiscal_position', 'product_id', 'price_unit',
+                     'company_id', 'invoice_line_tax_id', 'partner_id',
+                     'quantity'])[0]
+                for aux in old:
+                    if isinstance(old[aux], (tuple)):
+                        old[aux] = old[aux][0]
+                old['invoice_line_tax_id'] = [[6, 0, old['invoice_line_tax_id']]]
+                values = dict(old.items() + values.items())
 
         result = {
             'product_type': 'product',
@@ -915,6 +1044,7 @@ class AccountInvoiceLine(orm.Model):
     def write(self, cr, uid, ids, vals, context=None):
         if not context:
             context = {}
+        context.update({'invoice_line_id': ids})
         vals.update(self._validate_taxes(cr, uid, vals, context))
         return super(AccountInvoiceLine, self).write(
             cr, uid, ids, vals, context=context)
@@ -980,8 +1110,11 @@ class AccountInvoiceTax(orm.Model):
                         round=False)
                     val['account_id'] = tax['account_paid_id'] or line.account_id.id
                     val['account_analytic_id'] = tax['account_analytic_paid_id']
+                
+                if not val.get('account_analytic_id') and line.account_analytic_id and val['account_id'] == line.account_id.id:
+                    val['account_analytic_id'] = line.account_analytic_id.id
 
-                key = (val['tax_code_id'], val['base_code_id'], val['account_id'], val['account_analytic_id'])
+                key = (val['tax_code_id'], val['base_code_id'], val['account_id'])
                 if not key in tax_grouped:
                     tax_grouped[key] = val
                 else:
