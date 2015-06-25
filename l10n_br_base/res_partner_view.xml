@@ -51,7 +51,7 @@
                 		<field name="zip" position="replace"/>
 				<field name="street" position="replace">
 					<field name="zip" placeholder="Cep"/>
-					<field name="street" placeholder="Logadouro"/>
+					<field name="street" placeholder="Logradouro"/>
 					<field name="number" placeholder="numero" />
 					<field name="district" placeholder="bairro" />
 				</field>
