@@ -13,7 +13,7 @@
 				<field name="zip" position="replace"/>
 				<field name="street" position="replace">
 					<field name="zip" placeholder="Cep" style="width:50%;" />
-					<field name="street"/>
+					<field name="street" placeholder="Logradouro"/>
 					<field name="number" placeholder="número"/>
 					<field name="street2" placeholder="complemento"/>
 					<field name="district" placeholder="bairro"/>
