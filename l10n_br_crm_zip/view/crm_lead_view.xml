@@ -3,13 +3,13 @@
 	<data>
 
 	   	<!-- CRM Lead Form View  -->
-	   	<record model="ir.ui.view" id="l10n_br_crm_case_form_view_leads1">
+	   	<record model="ir.ui.view" id="l10n_br_crm_case_form_view_leads_zip">
 			<field name="name">l10n_br_crm.leads1</field>
 			<field name="model">crm.lead</field>
 			<field name="inherit_id" ref="crm.crm_case_form_view_leads" />
 			<field name="arch" type="xml">
 				<field name="zip" position="after">
-					<button name="zip_search" type="object" class="oe_inline">
+					<button name="zip_search" type="object" class="oe_inline" help="To search the ZIP code from address ensures you first select Country, State and City, and add at least 3 letters of the street name">
 						<i class="fa fa-search"></i>
 					</button>
 				</field>

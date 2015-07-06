@@ -20,97 +20,102 @@ msgstr ""
 #: view:l10n_br.zip:l10n_br_zip.view_form_l10n_br_zip
 #: view:l10n_br.zip:l10n_br_zip.view_tree_l10n_br_zip
 msgid "CEPs"
-msgstr "CEPs"
+msgstr ""
 
 #. module: l10n_br_zip
 #: code:addons/l10n_br_zip/res_company.py:47
 #: code:addons/l10n_br_zip/res_partner.py:42
 #, python-format
 msgid "Choose a City"
-msgstr "Escolha uma Cidade"
+msgstr ""
 
 #. module: l10n_br_zip
 #: code:addons/l10n_br_zip/res_company.py:41
 #: code:addons/l10n_br_zip/res_partner.py:36
 #, python-format
 msgid "Choose a Country"
-msgstr "Escolha um País"
+msgstr ""
 
 #. module: l10n_br_zip
 #: code:addons/l10n_br_zip/res_company.py:44
 #: code:addons/l10n_br_zip/res_partner.py:39
 #, python-format
 msgid "Choose a State"
-msgstr "Escolha um Estado"
+msgstr ""
 
 #. module: l10n_br_zip
 #: field:l10n_br.zip,l10n_br_city_id:0
 msgid "City"
-msgstr "Cidade"
+msgstr ""
 
 #. module: l10n_br_zip
 #: model:ir.model,name:l10n_br_zip.model_res_company
 msgid "Companies"
-msgstr "Empresas"
+msgstr ""
 
 #. module: l10n_br_zip
 #: field:l10n_br.zip,complement:0
 msgid "Complement"
-msgstr "Complemento"
+msgstr ""
 
 #. module: l10n_br_zip
 #: field:l10n_br.zip,country_id:0
 msgid "Country"
-msgstr "País"
+msgstr ""
 
 #. module: l10n_br_zip
 #: field:l10n_br.zip,create_uid:0
 msgid "Created by"
-msgstr "Criado por"
+msgstr ""
 
 #. module: l10n_br_zip
 #: field:l10n_br.zip,create_date:0
 msgid "Created on"
-msgstr "Criado em"
+msgstr ""
 
 #. module: l10n_br_zip
 #: field:l10n_br.zip,district:0
 msgid "District"
-msgstr "Bairro"
+msgstr ""
 
 #. module: l10n_br_zip
 #: field:l10n_br.zip,id:0
 msgid "ID"
-msgstr "ID"
+msgstr ""
 
 #. module: l10n_br_zip
 #: field:l10n_br.zip,write_uid:0
 msgid "Last Updated by"
-msgstr "Alterado por"
+msgstr ""
 
 #. module: l10n_br_zip
 #: field:l10n_br.zip,write_date:0
 msgid "Last Updated on"
-msgstr "Alterado em"
+msgstr ""
 
 #. module: l10n_br_zip
 #: model:ir.model,name:l10n_br_zip.model_res_partner
 msgid "Partner"
-msgstr "Cliente"
+msgstr ""
+
+#. module: l10n_br_zip
+#: code:addons/l10n_br_zip/res_company.py:105
+#, python-format
+msgid "Please specify the sreet name better, we are getting too much results !"
+msgstr ""
 
 #. module: l10n_br_zip
 #: code:addons/l10n_br_zip/res_partner.py:100
-#: code:addons/l10n_br_zip/res_company.py:105
 #, python-format
 msgid "Please specify the street name better, we are getting too much results !"
-msgstr "Por favor escreva melhor o nome da rua, estamos encontrando resultados demais!"
+msgstr ""
 
 #. module: l10n_br_zip
 #: code:addons/l10n_br_zip/res_company.py:161
 #: code:addons/l10n_br_zip/res_partner.py:156
 #, python-format
 msgid "Please type in ZIP Code entirely, we are getting too much results!"
-msgstr "Por favor digite o CEP inteiro, estamos encontrando resultados demais!"
+msgstr ""
 
 #. module: l10n_br_zip
 #: code:addons/l10n_br_zip/res_company.py:35
@@ -119,35 +124,35 @@ msgstr "Por favor digite o CEP inteiro, estamos encontrando resultados demais!"
 #: code:addons/l10n_br_zip/res_partner.py:33
 #, python-format
 msgid "Please type in at least 3 letters of the Street Name for search"
-msgstr "Por favor digite pelo menos 3 letras do nome da Rua antes de buscar"
+msgstr ""
 
 #. module: l10n_br_zip
 #: field:l10n_br.zip,state_id:0
 msgid "State"
-msgstr "Estado"
+msgstr ""
 
 #. module: l10n_br_zip
 #: field:l10n_br.zip,street:0
 msgid "Street"
-msgstr "Rua"
+msgstr ""
 
 #. module: l10n_br_zip
 #: field:l10n_br.zip,name:0
 msgid "ZIP Code"
-msgstr "CEP"
+msgstr ""
 
 #. module: l10n_br_zip
 #: model:ir.actions.act_window,name:l10n_br_zip.action_l10n_br_zip
 msgid "ZIP Code Table"
-msgstr "Tabela de CEPs"
+msgstr ""
 
 #. module: l10n_br_zip
 #: model:ir.ui.menu,name:l10n_br_zip.menu_action_l10n_br_base_zip_form
 msgid "Zip Code Table"
-msgstr "Tabela de CEPs"
+msgstr ""
 
 #. module: l10n_br_zip
 #: view:res.partner:l10n_br_zip.l10n_br_zip_view_partner_form2
 msgid "width: 50%"
-msgstr "largura: 50%"
+msgstr ""
 

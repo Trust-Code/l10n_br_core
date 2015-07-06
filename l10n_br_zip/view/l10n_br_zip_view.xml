@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<openerp>
+ <data>
+
+  <record id="view_tree_l10n_br_zip" model="ir.ui.view">
+   <field name="name">ZIP Code Table Tree</field>
+   <field name="model">l10n_br.zip</field>
+   <field name="arch" type="xml">
+
+    <tree string="CEPs">
+     <field name="name" />
+     <field name="street" />
+     <field name="complement" />
+     <field name="l10n_br_city_id" />
+     <field name="state_id" />
+    </tree>
+
+   </field>
+  </record>
+
+  <record id="view_form_l10n_br_zip" model="ir.ui.view">
+   <field name="name">ZIP Code Table Form</field>
+   <field name="model">l10n_br.zip</field>
+   <field name="arch" type="xml">
+
+    <form string="CEPs">
+     <field name="name" />
+     <field name="street" />
+     <field name="district" />
+     <field name="complement" />
+     <field name="country_id" />
+     <field name="state_id" />
+     <field name="l10n_br_city_id" />
+    </form>
+
+   </field>
+  </record>
+
+  <act_window id="action_l10n_br_zip"
+              name="ZIP Code Table"
+              res_model="l10n_br.zip"
+              view_mode="tree,form" />
+		
+  <menuitem name="Zip Code Table" 
+            id="menu_action_l10n_br_base_zip_form" 
+            parent="base.menu_localisation" 
+            action="action_l10n_br_zip" />
+
+ </data>
+</openerp>
