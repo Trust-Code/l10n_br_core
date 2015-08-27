@@ -20,4 +20,3 @@
 import res_partner
 import res_company
 import l10n_br_zip
-import wizard

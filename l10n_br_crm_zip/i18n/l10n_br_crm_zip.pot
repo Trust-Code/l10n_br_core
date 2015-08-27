@@ -19,51 +19,51 @@ msgstr ""
 #: code:addons/l10n_br_crm_zip/crm_lead.py:42
 #, python-format
 msgid "Choose a City"
-msgstr "Escolha uma Cidade"
+msgstr ""
 
 #. module: l10n_br_crm_zip
 #: code:addons/l10n_br_crm_zip/crm_lead.py:36
 #, python-format
 msgid "Choose a Country"
-msgstr "Escolha um País"
+msgstr ""
 
 #. module: l10n_br_crm_zip
 #: code:addons/l10n_br_crm_zip/crm_lead.py:39
 #, python-format
 msgid "Choose a State"
-msgstr "Escolha um Estado"
+msgstr ""
 
 #. module: l10n_br_crm_zip
 #: model:ir.model,name:l10n_br_crm_zip.model_crm_lead
 msgid "Lead/Opportunity"
-msgstr "Propecto/Oportunidade"
+msgstr ""
 
 #. module: l10n_br_crm_zip
 #: code:addons/l10n_br_crm_zip/crm_lead.py:100
 #, python-format
 msgid "Please specify the street name better, we are getting too much results !"
-msgstr "Por favor escreva melhor o nome da rua, estamos encontrando resultados demais!"
+msgstr ""
 
 #. module: l10n_br_crm_zip
 #: code:addons/l10n_br_crm_zip/crm_lead.py:156
 #, python-format
 msgid "Please type in ZIP Code entirely, we are getting too much results!"
-msgstr "Por favor digite o CEP inteiro, estamos encontrando resultados demais!"
+msgstr ""
 
 #. module: l10n_br_crm_zip
 #: code:addons/l10n_br_crm_zip/crm_lead.py:30
 #: code:addons/l10n_br_crm_zip/crm_lead.py:33
 #, python-format
 msgid "Please type in at least 3 letters of the Street Name for search"
-msgstr "Por favor digite pelo menos 3 letras do nome da Rua antes de buscar"
+msgstr ""
 
 #. module: l10n_br_crm_zip
 #: view:crm.lead:l10n_br_crm_zip.l10n_br_crm_case_form_view_leads_zip
 msgid "To search the ZIP code from address ensures you first select Country, State and City, and add at least 3 letters of the street name"
-msgstr "Para buscar o CEP a partir do endereço tenha certeza de preencher os campos País, Estado e Cidade e digitar pelo menos 3 letras do nome da rua"
+msgstr ""
 
 #. module: l10n_br_crm_zip
 #: view:crm.lead:l10n_br_crm_zip.l10n_br_crm_case_form_view_leads_zip
 msgid "width: 50%"
-msgstr "largura: 50%"
+msgstr ""
 

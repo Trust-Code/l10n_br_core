@@ -22,45 +22,152 @@
 #
 ##############################################################################
 
-from openerp.osv import orm
+from openerp import models,fields,api,exceptions,_
+import requests
 
-
-class res_company(orm.Model):
+class res_company(models.Model):
     _inherit = 'res.company'
 
-    def zip_search(self, cr, uid, ids, context=None):
-        obj_zip = self.pool.get('l10n_br.zip')
-        for res_company in self.browse(cr, uid, ids):
-            zip_ids = obj_zip.zip_search_multi(
-                cr, uid, ids, context,
-                country_id=res_company.country_id.id,
-                state_id=res_company.state_id.id,
-                l10n_br_city_id=res_company.l10n_br_city_id.id,
-                district=res_company.district,
-                street=res_company.street,
-                zip_code=res_company.zip,
-            )
+    @api.one
+    def zip_search(self):
+        if not self.zip:
+           if not self.street:
+              raise exceptions.Warning(_('Please type in at least 3 letters of the Street Name for search'))
 
-            zip_data = obj_zip.read(cr, uid, zip_ids, False, context)
-            obj_zip_result = self.pool.get('l10n_br.zip.result')
-            zip_ids = obj_zip_result.map_to_zip_result(
-                cr, uid, 0, context, zip_data, self._name, ids[0])
+           if len(self.street) < 3:
+              raise exceptions.Warning(_('Please type in at least 3 letters of the Street Name for search'))
 
-            if len(zip_ids) == 1:  # FIXME
-                result = obj_zip.set_result(cr, uid, ids, context, zip_data[0])
-                self.write(cr, uid, [res_company.id], result, context)
-                return True
-            else:
-                if len(zip_ids) > 1:
-                    return obj_zip.create_wizard(
-                        cr, uid, ids, context, self._name,
-                        country_id=res_company.country_id.id,
-                        state_id=res_company.state_id.id,
-                        l10n_br_city_id=res_company.l10n_br_city_id.id,
-                        district=res_company.district,
-                        street=res_company.street,
-                        zip_code=res_company.zip,
-                        zip_ids=zip_ids
-                    )
-                else:
-                    return True
+           if not self.country_id:
+              raise exceptions.Warning(_('Choose a Country'))
+
+           if not self.state_id:
+              raise exceptions.Warning(_('Choose a State'))
+
+           if not self.l10n_br_city_id:
+              raise exceptions.Warning(_('Choose a City'))
+
+           get_url_viacep = 'http://viacep.com.br/ws/' + self.state_id.code + '/' + self.l10n_br_city_id.name + '/' + self.street + '/json'
+           obj_viacep = requests.get(get_url_viacep)
+           data_viacep = obj_viacep.json()
+
+           # Write data to the database
+           for res in data_viacep:
+               Zip_search = self.env['l10n_br.zip'].search([('name','=',res['cep'])])
+               if len(Zip_search) == 0:
+                  # Locate Country Code
+                  Country = self.env['res.country']
+                  cod_pais = Country.search([('name','=','Brasil')])
+
+                  # Locate State Code
+                  State = self.env['res.country.state']
+                  cod_estado = State.search([('code','=',res['uf'])])
+
+                  # Locate City
+                  City = self.env['l10n_br_base.city']
+                  City.filtered
+                  cod_cidade = City.search(['&',('name','=',res['localidade']),('state_id','=',cod_estado.id)])
+
+                  # Append this Zip code info to the Zip table
+                  Zip_table = self.env['l10n_br.zip'].create({'name': res['cep'],
+                                                              'street': res['logradouro'],
+                                                              'district': res['bairro'],
+                                                              'complement': res['complemento'],
+                                                              'country_id': cod_pais.id,
+                                                              'state_id': cod_estado.id,
+                                                              'l10n_br_city_id': cod_cidade.id})
+ 
+           if len(data_viacep) == 1:
+
+              # Locate Country Code
+              Country = self.env['res.country']
+              cod_pais = Country.search([('name','=','Brasil')])
+
+              # Locate State Code
+              State = self.env['res.country.state']
+              cod_estado = State.search([('code','=',res['uf'])])
+
+              # Locate City
+              City = self.env['l10n_br_base.city']
+              City.filtered
+              cod_cidade = City.search(['&',('name','=',res['localidade']),('state_id','=',cod_estado.id)])
+
+              # Only 1 ZIP Code found, populating data
+              self.write({'zip': data_viacep[0]['cep'],
+                          'street': data_viacep[0]['logradouro'],
+                          'district': data_viacep[0]['bairro'],
+                          'country_id': cod_pais.id,
+                          'state_id': cod_estado.id,
+                          'l10n_br_city_id': cod_cidade.id})
+
+           elif len(data_viacep) > 1:
+
+              # Alert the user to specify street better
+              raise exceptions.Warning(_('Please specify the street name better, we are getting too much results !'))
+
+           return True
+
+        else:
+
+           # Search the ZIP Table for the given code
+           Zip_search = self.env['l10n_br.zip'].search([('name','=',self.zip)])
+           if len(Zip_search) == 0: 
+              get_url_viacep = 'http://viacep.com.br/ws/' + self.zip + '/json'
+              obj_viacep = requests.get(get_url_viacep)
+              data_viacep = obj_viacep.json()
+
+              # Ignore if error returned
+              if ("erro" in data_viacep):
+
+                 # Write data to self object
+                 self.write({'street': '',
+                             'district': '',
+                             'country_id': False,
+                             'state_id': False,
+                             'l10n_br_city_id': False})
+
+              else:
+
+                 # Locate Country Code
+                 Country = self.env['res.country']
+                 cod_pais = Country.search([('name','=','Brasil')])
+
+                 # Locate State Code
+                 State = self.env['res.country.state']
+                 cod_estado = State.search([('code','=',data_viacep['uf'])])
+
+                 # Locate City
+                 City = self.env['l10n_br_base.city']
+                 City.filtered
+                 cod_cidade = City.search(['&',('name','=',data_viacep['localidade']),('state_id','=',cod_estado.id)])
+
+                 # Write data to self object
+                 self.write({'street': data_viacep['logradouro'],
+                             'district': data_viacep['bairro'],
+                             'country_id': cod_pais.id,
+                             'state_id': cod_estado.id,
+                             'l10n_br_city_id': cod_cidade.id})
+
+                 # Append this Zip code info to the Zip table
+                 Zip_table = self.env['l10n_br.zip'].create({'name': self.zip,
+                                                             'street': data_viacep['logradouro'],
+                                                             'district': data_viacep['bairro'],
+                                                             'complement': data_viacep['complemento'],
+                                                             'country_id': cod_pais.id,
+                                                             'state_id': cod_estado.id,
+                                                             'l10n_br_city_id': cod_cidade.id})
+
+           else:
+              if len(Zip_search) > 1:
+                 raise exceptions.Warning(_('Please type in ZIP Code entirely, we are getting too much results!'))
+
+              else:
+
+                 # Write data to self object
+                 self.write({'street': Zip_search.street,
+                             'district': Zip_search.district,
+                             'country_id': Zip_search.country_id.id,
+                             'state_id': Zip_search.state_id.id,
+                             'l10n_br_city_id': Zip_search.l10n_br_city_id.id})
+
+        return True
+

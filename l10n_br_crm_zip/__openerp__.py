@@ -30,8 +30,8 @@
         'l10n_br_crm',
     ],
     'data': [
-        'crm_lead_view.xml',
-        'crm_opportunity_view.xml',
+        'view/crm_lead_view.xml',
+        'view/crm_opportunity_view.xml',
     ],
     'demo': [],
     'installable': True,
