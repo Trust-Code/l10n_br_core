@@ -129,12 +129,20 @@ class AccountInvoice(models.Model):
                            ('fiscal_document_id', '=', fiscal_document)
                            ])
             if invoice.issuer == '0':
-                domain.extend(
-                    [('company_id', '=', invoice.company_id.id),
-                        ('internal_number', '=', invoice.number),
-                        ('fiscal_document_id', '=',
-                            invoice.fiscal_document_id.id),
-                        ('issuer', '=', '0')])
+                if invoice.fiscal_type == 'product':
+                    domain.extend(
+                        [('company_id', '=', invoice.company_id.id),
+                            ('internal_number', '=', invoice.number),
+                            ('fiscal_document_id', '=',
+                                invoice.fiscal_document_id.id),
+                            ('issuer', '=', '0')])
+                else:
+                    domain.extend(
+                        [('company_id', '=', invoice.company_id.id),
+                            ('number', '=', invoice.number),
+                            ('fiscal_document_id', '=',
+                                invoice.fiscal_document_id.id),
+                            ('issuer', '=', '0')])
             else:
                 domain.extend(
                     [('partner_id', '=', invoice.partner_id.id),
