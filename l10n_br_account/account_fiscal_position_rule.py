@@ -111,10 +111,10 @@ class AccountFiscalPositionRule(models.Model):
         if context is None:
             context = {}
 
-        from_country = company.partner_id.country_id.id
-        from_state = company.partner_id.state_id.id
-        fiscal_rule_parent_id = company.fiscal_rule_parent_id.id
-        partner_fiscal_type_id = partner.partner_fiscal_type_id.id
+        from_country = company.sudo().partner_id.country_id.id
+        from_state = company.sudo().partner_id.state_id.id
+        fiscal_rule_parent_id = company.sudo().fiscal_rule_parent_id.id
+        partner_fiscal_type_id = partner.sudo().partner_fiscal_type_id.id
 
         document_date = context.get('date', time.strftime('%Y-%m-%d'))
         use_domain = context.get('use_domain', ('use_sale', '=', True))
