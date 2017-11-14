@@ -325,6 +325,7 @@ class SaleOrderLine(orm.Model):
         'price_subtotal': fields.function(
             _amount_line, string='Subtotal',
             digits_compute=dp.get_precision('Sale Price'), multi='sums'),
+        'item_pedido_compra': fields.char('Item Pedido Compra', size=30),
     }
     _defaults = {
         'insurance_value': 0.00,
@@ -341,6 +342,7 @@ class SaleOrderLine(orm.Model):
         result['insurance_value'] = line.insurance_value
         result['other_costs_value'] = line.other_costs_value
         result['freight_value'] = line.freight_value
+        result['item_pedido_compra'] = line.item_pedido_compra
 
         #FIXME
         # Necessário informar estes campos pois são related do
