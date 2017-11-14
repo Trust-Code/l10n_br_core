@@ -349,6 +349,8 @@ class NFe200(FiscalDocument):
         self.det.prod.vDesc.valor = str("%.2f" % inv_line.discount_value)
         self.det.prod.vOutro.valor = str("%.2f" % inv_line.other_costs_value)
         self.det.imposto.vTotTrib.valor = str("%.2f" % total_tax)
+        self.det.prod.xPed.valor = inv.name or ''
+        self.det.prod.nItemPed.valor = inv_line.item_pedido_compra or ''
         #
         # Produto entra no total da NF-e
         #

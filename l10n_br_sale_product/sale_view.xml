@@ -13,9 +13,12 @@
 					<field name="amount_insurance" widget='monetary' options="{'currency_field': 'currency_id'}"/>
 					<field name="amount_costs" widget='monetary' options="{'currency_field': 'currency_id'}"/>
 				</field>
-                <field name="client_order_ref" position="after">
+        <field name="client_order_ref" position="after">
 					<field name="ind_pres" string="Tipo de operação"/>
 				</field>
+				<xpath expr="//field[@name='order_line']/form/group/group/field[@name='th_weight']" position="after">
+						<field name="item_pedido_compra" />
+				</xpath>
 			</field>
 		</record>
 <!--
