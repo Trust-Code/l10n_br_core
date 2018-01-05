@@ -197,7 +197,7 @@ class AccountTax(models.Model):
                 difa['vBCUFDest'] = total_base
                 # ICMS origem = [BC x ALQ INTER]
                 difa['pICMSUFDest'] = specific_icms_intra[0]['percent']
-                difa['pICMSInterPart'] = 0.60
+                difa['pICMSInterPart'] = 0.80
                 # ICMS interno Destino = [BC x ALQ intra]
                 difa['pICMSInter'] = specific_icms_inter[0]['percent']
                 # ICMS destino = [BC x ALQ intra] - ICMS origem

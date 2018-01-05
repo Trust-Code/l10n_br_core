@@ -735,7 +735,7 @@ class AccountInvoiceLine(models.Model):
         result = {
             'vBCUFDest': tax.get('total_base', 0.0),
             'pICMSInter': tax.get('percent', 0.0) * 100,
-            'pICMSInterPart': 40.0,
+            'pICMSInterPart': 80.0,
             'vICMSUFRemet': tax.get('amount', 0.0),
         }
         return result

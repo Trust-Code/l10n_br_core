@@ -393,7 +393,7 @@ class NFe200(FiscalDocument):
                 if inv_line.icms_origin in ('1', '2', '3', '8'):
                     perc_default = 4
                 self.det.imposto.ICMSUFDest.pICMSInter.valor = str("%.2f" % (inv_line.pICMSInter or perc_default))
-                self.det.imposto.ICMSUFDest.pICMSInterPart.valor = str("%.2f" % (inv_line.pICMSInterPart or 60))
+                self.det.imposto.ICMSUFDest.pICMSInterPart.valor = str("%.2f" % (inv_line.pICMSInterPart or 80))
                 self.det.imposto.ICMSUFDest.vFCPUFDest.valor = str("%.2f" % inv_line.vFCPUFDest)
                 self.det.imposto.ICMSUFDest.vICMSUFDest.valor = str("%.2f" % inv_line.vICMSUFDest)
                 self.det.imposto.ICMSUFDest.vICMSUFRemet.valor = str("%.2f" % inv_line.vICMSUFRemet)
