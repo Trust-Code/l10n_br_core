@@ -124,14 +124,13 @@ class AccountInvoice(models.Model):
                 continue
             fiscal_document = invoice.fiscal_document_id and \
                 invoice.fiscal_document_id.id or False
-            domain.extend([('internal_number', '=', invoice.number),
-                           ('fiscal_type', '=', invoice.fiscal_type),
+            domain.extend([('fiscal_type', '=', invoice.fiscal_type),
                            ('fiscal_document_id', '=', fiscal_document)
                            ])
             if invoice.issuer == '0':
                 domain.extend(
                     [('company_id', '=', invoice.company_id.id),
-                        ('internal_number', '=', invoice.number),
+                        ('number', '=', invoice.number),
                         ('fiscal_document_id', '=',
                             invoice.fiscal_document_id.id),
                         ('issuer', '=', '0')])
