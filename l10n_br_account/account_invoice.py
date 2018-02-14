@@ -125,20 +125,19 @@ class AccountInvoice(models.Model):
             fiscal_document = invoice.fiscal_document_id and \
                 invoice.fiscal_document_id.id or False
             domain.extend([('fiscal_type', '=', invoice.fiscal_type),
-                           ('fiscal_document_id', '=', fiscal_document)
-                           ])
+                           ('fiscal_document_id', '=', fiscal_document)])
             if invoice.issuer == '0':
                 domain.extend(
                     [('company_id', '=', invoice.company_id.id),
-                        ('number', '=', invoice.number),
-                        ('fiscal_document_id', '=',
-                            invoice.fiscal_document_id.id),
-                        ('issuer', '=', '0')])
+                     ('number', '=', invoice.number),
+                     ('fiscal_document_id', '=', invoice.fiscal_document_id.id),
+                     ('issuer', '=', '0')])
             else:
                 domain.extend(
                     [('partner_id', '=', invoice.partner_id.id),
-                        ('vendor_serie', '=', invoice.vendor_serie),
-                        ('issuer', '=', '1')])
+                     ('vendor_serie', '=', invoice.vendor_serie),
+                     ('internal_number', '=', invoice.internal_number),
+                     ('issuer', '=', '1')])
 
             invoice_id = self.pool.get('account.invoice').search(
                 cr, uid, domain)
