@@ -252,12 +252,18 @@ class AccountInvoice(models.Model):
         move_lines_new.extend(move_lines_payment)
 
         if value_to_debit > 0.0:
-            value_item = value_to_debit / float(len(move_lines_payment))
+            value_item = round(value_to_debit / float(len(move_lines_payment)), 2)
+            saldo = value_to_debit
             for move in move_lines_payment:
+                saldo -= value_item
                 if move[2]['debit']:
                     move[2]['debit'] = move[2]['debit'] - value_item
                 elif move[2]['credit']:
                     move[2]['credit'] = move[2]['credit'] - value_item
+            if move[2]['debit']:
+                move[2]['debit'] = move[2]['debit'] - saldo
+            elif move[2]['credit']:
+                move[2]['credit'] = move[2]['credit'] - saldo
 
         return move_lines_new
 
